@@ -11,12 +11,17 @@ variable "instance_type" {
   default = "t2.medium"
 }
 
+# Generate random suffix to avoid duplicate SG error
+resource "random_id" "suffix" {
+  byte_length = 3
+}
+
 # Get default VPC
 data "aws_vpc" "default" {
   default = true
 }
 
-# Get default subnets
+# Get default subnet
 data "aws_subnets" "default" {
   filter {
     name   = "vpc-id"
@@ -24,9 +29,9 @@ data "aws_subnets" "default" {
   }
 }
 
-# Security Group in default VPC
+# Security Group (unique name every run)
 resource "aws_security_group" "jenkins_sg" {
-  name   = "jenkins-sg"
+  name   = "jenkins-sg-${random_id.suffix.hex}"
   vpc_id = data.aws_vpc.default.id
 
   ingress {
@@ -53,6 +58,7 @@ resource "aws_security_group" "jenkins_sg" {
   }
 }
 
+# EC2 Instance
 resource "aws_instance" "jenkins_server" {
   ami           = "ami-0f5ee92e2d63afc18"
   instance_type = var.instance_type
